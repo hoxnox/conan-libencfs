@@ -1,0 +1,188 @@
+--- CMakeLists.txt	2017-09-25 21:34:32.755527667 +0300
++++ CMakeLists.txt	2017-09-25 21:34:35.127527536 +0300
+@@ -15,8 +15,7 @@
+ 
+ option(IWYU "Build with IWYU analysis." OFF)
+ 
+-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+-  "${CMAKE_CURRENT_LIST_DIR}/cmake")
++set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH}) 
+ 
+ option (BUILD_SHARED_LIBS "build shared libraries" OFF)
+ option (USE_INTERNAL_TINYXML "use built-in TinyXML2" ON)
+@@ -59,6 +58,8 @@
+    endif()
+ endif()
+ 
++find_package(Threads REQUIRED)
++
+ # Check for FUSE.
+ find_package (FUSE REQUIRED)
+ include_directories (${FUSE_INCLUDE_DIR})
+@@ -179,7 +180,6 @@
+   encfs/NullNameIO.cpp
+   encfs/openssl.cpp
+   encfs/RawFileIO.cpp
+-  encfs/readpassphrase.cpp
+   encfs/SSL_Cipher.cpp
+   encfs/StreamNameIO.cpp
+   encfs/XmlReader.cpp
+@@ -188,7 +188,7 @@
+ set_target_properties(encfs PROPERTIES
+   VERSION ${ENCFS_VERSION}
+   SOVERSION ${ENCFS_SOVERSION})
+-target_link_libraries(encfs
++list(APPEND LIBRARIES encfs
+   ${FUSE_LIBRARIES}
+   ${OPENSSL_LIBRARIES}
+   ${TINYXML_LIBRARIES}
+@@ -199,76 +199,76 @@
+   install (TARGETS encfs DESTINATION ${LIB_INSTALL_DIR})
+ endif (INSTALL_LIBENCFS)
+ 
+-if (IWYU)
+-  if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
+-    find_program(iwyu_path NAMES include-what-you-use iwyu)
+-    if (iwyu_path)
+-      message ("-- Enabled IWYU")
+-      set_property(TARGET encfs PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path})
+-    endif()
+-  endif()
+-endif()
+-
+-
+-# Set RPATH to library install path.
+-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+-
+-add_executable (encfs-bin encfs/main.cpp)
+-target_link_libraries (encfs-bin encfs)
+-set_target_properties (encfs-bin PROPERTIES OUTPUT_NAME "encfs")
+-install (TARGETS encfs-bin DESTINATION bin)
+-
+-add_executable (encfsctl encfs/encfsctl.cpp)
+-target_link_libraries (encfsctl encfs)
+-install (TARGETS encfsctl DESTINATION bin)
+-
+-add_executable (makekey encfs/makeKey.cpp)
+-target_link_libraries (makekey encfs)
+-
+-add_executable (checkops encfs/test.cpp)
+-target_link_libraries (checkops encfs)
+-
+-install (FILES encfs/encfssh DESTINATION bin)
+-
+-# Reference all headers, to make certain IDEs happy.
+-file (GLOB_RECURSE all_headers ${CMAKE_CURRENT_LIST_DIR}/*.h)
+-add_custom_target (all_placeholder SOURCES ${all_headers})
+-
+-if (POD2MAN)
+-  add_custom_target (encfs-man ALL
+-    COMMAND ${POD2MAN} -u --section=1 --release=${ENCFS_VERSION} --center=${ENCFS_NAME}
+-            ${CMAKE_CURRENT_LIST_DIR}/encfs/encfs.pod encfs.1)
+-
+-  add_custom_target (encfsctl-man ALL
+-    COMMAND ${POD2MAN} -u --section=1 --release=${ENCFS_VERSION} --center=${ENCFS_NAME}
+-            ${CMAKE_CURRENT_LIST_DIR}/encfs/encfsctl.pod encfsctl.1)
+-
+-  install (FILES ${CMAKE_BINARY_DIR}/encfs.1 ${CMAKE_BINARY_DIR}/encfsctl.1
+-    DESTINATION share/man/man1)
+-endif (POD2MAN)
+-
+-# Tests
+-enable_testing()
+-
+-if (CMAKE_CONFIGURATION_TYPES)
+-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
+-        --force-new-ctest-process --output-on-failure
+-        --build-config "$<CONFIGURATION>")
+-else()
+-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
+-        --force-new-ctest-process --output-on-failure)
+-endif()
+-
+-add_test (NAME checkops
+-          COMMAND checkops)
+-
+-find_program (PERL_PROGRAM perl)
+-if (PERL_PROGRAM)
+-  file(GLOB pl_test_files "tests/*.t.pl")
+-  add_test (NAME scriptedtests
+-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+-            COMMAND ${PERL_PROGRAM}
+-               -MTest::Harness
+-               -e "$$Test::Harness::verbose=1; runtests @ARGV;"
+-               ${pl_test_files})
+-endif (PERL_PROGRAM)
++#if (IWYU)
++#  if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
++#    find_program(iwyu_path NAMES include-what-you-use iwyu)
++#    if (iwyu_path)
++#      message ("-- Enabled IWYU")
++#      set_property(TARGET encfs PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path})
++#    endif()
++#  endif()
++#endif()
++#
++#
++## Set RPATH to library install path.
++#set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
++#
++#add_executable (encfs-bin encfs/main.cpp)
++#target_link_libraries (encfs-bin encfs)
++#set_target_properties (encfs-bin PROPERTIES OUTPUT_NAME "encfs")
++#install (TARGETS encfs-bin DESTINATION bin)
++#
++#add_executable (encfsctl encfs/encfsctl.cpp)
++#target_link_libraries (encfsctl encfs)
++#install (TARGETS encfsctl DESTINATION bin)
++#
++#add_executable (makekey encfs/makeKey.cpp)
++#target_link_libraries (makekey encfs)
++#
++#add_executable (checkops encfs/test.cpp)
++#target_link_libraries (checkops encfs)
++#
++#install (FILES encfs/encfssh DESTINATION bin)
++#
++## Reference all headers, to make certain IDEs happy.
++#file (GLOB_RECURSE all_headers ${CMAKE_CURRENT_LIST_DIR}/*.h)
++#add_custom_target (all_placeholder SOURCES ${all_headers})
++#
++#if (POD2MAN)
++#  add_custom_target (encfs-man ALL
++#    COMMAND ${POD2MAN} -u --section=1 --release=${ENCFS_VERSION} --center=${ENCFS_NAME}
++#            ${CMAKE_CURRENT_LIST_DIR}/encfs/encfs.pod encfs.1)
++#
++#  add_custom_target (encfsctl-man ALL
++#    COMMAND ${POD2MAN} -u --section=1 --release=${ENCFS_VERSION} --center=${ENCFS_NAME}
++#            ${CMAKE_CURRENT_LIST_DIR}/encfs/encfsctl.pod encfsctl.1)
++#
++#  install (FILES ${CMAKE_BINARY_DIR}/encfs.1 ${CMAKE_BINARY_DIR}/encfsctl.1
++#    DESTINATION share/man/man1)
++#endif (POD2MAN)
++#
++## Tests
++#enable_testing()
++#
++#if (CMAKE_CONFIGURATION_TYPES)
++#    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
++#        --force-new-ctest-process --output-on-failure
++#        --build-config "$<CONFIGURATION>")
++#else()
++#    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
++#        --force-new-ctest-process --output-on-failure)
++#endif()
++#
++#add_test (NAME checkops
++#          COMMAND checkops)
++#
++#find_program (PERL_PROGRAM perl)
++#if (PERL_PROGRAM)
++#  file(GLOB pl_test_files "tests/*.t.pl")
++#  add_test (NAME scriptedtests
++#            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
++#            COMMAND ${PERL_PROGRAM}
++#               -MTest::Harness
++#               -e "$$Test::Harness::verbose=1; runtests @ARGV;"
++#               ${pl_test_files})
++#endif (PERL_PROGRAM)
