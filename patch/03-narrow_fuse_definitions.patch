@@ -1,0 +1,18 @@
+--- CMakeLists.txt	2017-09-28 10:54:29.088344052 +0300
++++ CMakeLists.txt	2017-09-28 10:54:15.629344796 +0300
+@@ -63,7 +63,6 @@
+ # Check for FUSE.
+ find_package (FUSE REQUIRED)
+ include_directories (${FUSE_INCLUDE_DIR})
+-add_definitions (-D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=26)
+ 
+ # Check for OpenSSL.
+ find_package (OpenSSL REQUIRED)
+@@ -185,6 +184,7 @@
+   encfs/XmlReader.cpp
+ )
+ add_library(encfs ${SOURCE_FILES})
++set_property(TARGET encfs PROPERTY COMPILE_DEFINITIONS "_FILE_OFFSET_BITS=64" "FUSE_USE_VERSION=26")
+ set_target_properties(encfs PROPERTIES
+   VERSION ${ENCFS_VERSION}
+   SOVERSION ${ENCFS_SOVERSION})
