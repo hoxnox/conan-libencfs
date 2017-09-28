@@ -14,8 +14,8 @@ class LibEncfsConan(NxConanFile):
     settings = "os", "compiler", "build_type", "arch"
     build_policy = "missing"
     description = "EncFS - an Encrypted Filesystem"
-    requires = "libfuse/2.9.7@hoxnox/stable", "libressl/2.5.3@hoxnox/stable"
-    default_options = "libfuse:shared=False", "libressl:shared=False"
+    requires = "libfuse/2.9.7@hoxnox/stable", "OpenSSL/1.0.2k@lasote/testing"
+    default_options = "libfuse:shared=False"
 
     def do_source(self):
         self.retrieve("cd9e972cd9565cdc26473c86d2c77c98de31fc6f604fa7d149dd5d6e35d46eaa",
@@ -51,8 +51,9 @@ class LibEncfsConan(NxConanFile):
                       "CMAKE_INSTALL_LIBDIR": "lib",
                       "CMAKE_PREFIX_PATH": cmake_prefix_path,
                       "ENABLE_NLS": "OFF",
-                      "BUILD_SHARED_LIBS":"OFF",
+                      "BUILD_SHARED_LIBS": "OFF",
                       "INSTALL_LIBENCFS": "ON"}
+        cmake.verbose = True
         cmake_defs.update(self.cmake_crt_linking_flags())
         cmake.configure(defs=cmake_defs, source_dir=src_dir)
         cmake.build(target="install")
