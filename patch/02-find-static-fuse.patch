@@ -1,0 +1,28 @@
+--- cmake/FindFUSE.cmake	2017-07-25 21:26:45.000000000 +0300
++++ cmale/FindFUSE.cmake	2017-09-27 15:51:40.219618556 +0300
+@@ -17,13 +17,22 @@
+     set (FUSE_SUFFIXES fuse refuse)
+ endif (APPLE)
+ 
++set( _fuse_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
++if(WIN32)
++	set(CMAKE_FIND_LIBRARY_SUFFIXES .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
++else()
++	set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
++endif()
++
+ # find includes
+-find_path (FUSE_INCLUDE_DIR fuse.h
+-        PATHS /opt /opt/local /usr/pkg
+-        PATH_SUFFIXES ${FUSE_SUFFIXES})
++find_path (FUSE_INCLUDE_DIR fuse.h)
+ 
+ # find lib
+ find_library (FUSE_LIBRARIES NAMES ${FUSE_NAMES})
++if (FUSE_LIBRARIES_NOTFOUND AND NOT FUSE_USE_STATIC_LIBS)
++	set(CMAKE_FIND_LIBRARY_SUFFIXES ${_fuse_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
++	find_library (FUSE_LIBRARIES fuse PATH_SUFFIXES lib)
++endif()
+ 
+ include ("FindPackageHandleStandardArgs")
+ find_package_handle_standard_args ("FUSE" DEFAULT_MSG

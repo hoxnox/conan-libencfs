@@ -1,6 +1,6 @@
 from nxtools import NxConanFile
 from conans import CMake, tools
-from shutil import copy, copytree
+from shutil import copy
 from os import makedirs
 from glob import glob
 
@@ -16,7 +16,6 @@ class LibEncfsConan(NxConanFile):
     description = "EncFS - an Encrypted Filesystem"
     requires = "libfuse/2.9.7@hoxnox/stable", "libressl/2.5.3@hoxnox/stable"
     default_options = "libfuse:shared=False", "libressl:shared=False"
-    exports = "patch/*", "nxtools/__init__.py", "nxtools/nx_conan_file.py"
 
     def do_source(self):
         self.retrieve("cd9e972cd9565cdc26473c86d2c77c98de31fc6f604fa7d149dd5d6e35d46eaa",
@@ -33,19 +32,27 @@ class LibEncfsConan(NxConanFile):
         src_dir = "{staging_dir}/src/encfs-{v}".format(staging_dir=self.staging_dir, v=self.version)
         cmake.build_dir = "{src_dir}/build".format(src_dir=src_dir)
         include_dir = "{staging_dir}/include/encfs".format(staging_dir=self.staging_dir)
-        copytree("patch", "{src_dir}/patch".format(src_dir=src_dir))
         makedirs("{include_dir}/internal".format(include_dir=include_dir))
         makedirs(cmake.build_dir)
 
-        for file in sorted(glob("patch/*.patch")):
+        for file in sorted(glob("patch/[0-9]*.patch")):
             self.output.info("Applying patch '{file}'".format(file=file))
             tools.patch(base_path=src_dir, patch_file=file, strip=0)
+        if self.settings.os == "Android":
+            for file in sorted(glob("patch/android-[0-9]*.patch")):
+                self.output.info("Applying patch '{file}'".format(file=file))
+                tools.patch(base_path=src_dir, patch_file=file, strip=0)
 
+
+        cmake_prefix_path = ""
+        for k,_ in self.deps_cpp_info.dependencies:
+            cmake_prefix_path = "%s;%s" % (cmake_prefix_path, self.deps_cpp_info[k].rootpath)
         cmake_defs = {"CMAKE_INSTALL_PREFIX": self.staging_dir,
                       "CMAKE_INSTALL_LIBDIR": "lib",
-                      "CMAKE_C_FLAGS": "-DBUILD_NLS=0",
-                      "FUSE_USE_STATIC_LIBS": "0" if self.options["libfuse"].shared else "1",
-                      "INSTALL_LIBENCFS": "True"}
+                      "CMAKE_PREFIX_PATH": cmake_prefix_path,
+                      "ENABLE_NLS": "OFF",
+                      "BUILD_SHARED_LIBS":"OFF",
+                      "INSTALL_LIBENCFS": "ON"}
         cmake_defs.update(self.cmake_crt_linking_flags())
         cmake.configure(defs=cmake_defs, source_dir=src_dir)
         cmake.build(target="install")

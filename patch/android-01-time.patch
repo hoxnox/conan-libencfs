@@ -1,0 +1,45 @@
+--- encfs/encfs.cpp
++++ encfs/encfs.cpp
+@@ -499,6 +499,31 @@ int encfs_chown(const char *path, uid_t uid, gid_t gid) {
+   return withCipherPath("chown", path, bind(_do_chown, _1, _2, uid, gid));
+ }
+ 
++inline int timespec_from_timeval(struct timespec& ts, const struct timeval& tv)
++{
++    ts.tv_sec = tv.tv_sec;
++    ts.tv_nsec = tv.tv_usec*1000;
++    return 0;
++}
++
++static int futimesat(int fd, const char* path, const timeval tv[2], int flags) {
++  timespec ts[2];
++  if (tv && (!timespec_from_timeval(ts[0], tv[0]) || !timespec_from_timeval(ts[1], tv[1]))) {
++    errno = EINVAL;
++    return -1;
++  }
++  return utimensat(fd, path, tv ? ts : nullptr, flags);
++}
++
++int utimes(const char* path, const timeval tv[2]) {
++  return futimesat(AT_FDCWD, path, tv, 0);
++}
++
++int lutimes(const char* path, const timeval tv[2]) {
++  return futimesat(AT_FDCWD, path, tv, AT_SYMLINK_NOFOLLOW);
++}
++
++
+ int _do_truncate(FileNode *fnode, off_t size) { return fnode->truncate(size); }
+ 
+ int encfs_truncate(const char *path, off_t size) {
+--- encfs/encfsctl.cpp
++++ encfs/encfsctl.cpp
+@@ -347,7 +347,7 @@ static int cmd_ls(int argc, char **argv) {
+         fnode->getAttr(&stbuf);
+ 
+         struct tm stm;
+-        localtime_r(&stbuf.st_mtime, &stm);
++        localtime_r((const time_t*)&stbuf.st_mtime, &stm);
+         stm.tm_year += 1900;
+         // TODO: when I add "%s" to the end and name.c_str(), I get a
+         // seg fault from within strlen.  Why ???
