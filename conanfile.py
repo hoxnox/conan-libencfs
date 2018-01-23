@@ -14,8 +14,9 @@ class LibEncfsConan(NxConanFile):
     settings = "os", "compiler", "build_type", "arch"
     build_policy = "missing"
     description = "EncFS - an Encrypted Filesystem"
-    requires = "libfuse/2.9.7@hoxnox/stable", "OpenSSL/1.0.2k@lasote/testing"
+    requires = "libfuse/2.9.7@hoxnox/stable", "openssl/1.1.0g@hoxnox/stable"
     default_options = "libfuse:shared=False"
+    options = {}
 
     def do_source(self):
         self.retrieve("cd9e972cd9565cdc26473c86d2c77c98de31fc6f604fa7d149dd5d6e35d46eaa",
